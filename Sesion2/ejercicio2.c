@@ -1,61 +1,64 @@
-#include<sys/types.h>	
-#include<unistd.h>		//POSIX Standard: 2.10 Symbolic Constants   
-#include<sys/stat.h>
-#include<fcntl.h>		//Needed for open
-#include<stdio.h>
-#include<errno.h>
-#include<stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
 
+int main(int argc, char *argv[]) {
 
-int main (int argc, char *argv[])
-{
+    if (argc != 3) {
+        perror("\nError: número de argumentos inválidos [programa] [path] [octal]\n");
+        exit(EXIT_FAILURE);
+    }
 
-	if (argc != 3){
-		perror("\nError numero de argumentos invalidos [programa] [path] [octal]\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	//comprobar que el directorio existe, si existe te metes dentro
-	int num_elementos = /*sacar elementos del directorio*/
-	int aux= num_elementos;
-	while (/*El numero de ficheros que sean reguales != 0*/){
-		int fd; //se crea uno para cada archivo
-		struct stat atributos;
-		
-		if ((fd=open("/*Archivo[aux-num_elementos]*/",O_CREAT | O_RDONLY,S_IRUSR)) < 0){
-			printf("\nError %d en open\n",errno);
-			perror("\nError en open\n");
-			exit(EXIT_FAILURE);
-		}
-		
-		if(stat("Archivo[aux-num_elementos]",&atributos) < 0) {
-			printf("\nError al intentar acceder a los atributos de archivo1\n");
-			perror("\nError en lstat\n");
-			exit(EXIT_FAILURE);
-		}
+    DIR *Directorio = opendir(argv[1]);
+    if (Directorio == NULL) {
+        perror("\nError: el directorio no se puede abrir\n");
+        exit(EXIT_FAILURE);
+    }
+    const char *direc = argv[1];
+    const int tam_direc = strlen(argv[1]);
+    const mode_t permisos = strtol(argv[2], 0, 8);
+    struct dirent *archivo;
+    while ((archivo = readdir(Directorio)) != NULL) {
+        char *path;
+        char *name = archivo->d_name;
 
-		
-		if(chmod("Archivo[aux-num_elementos]",(atributos.st_mode & ~S_IXGRP) | S_ISGID) < 
-		    0) 
-		{
-			perror("\nError en chmod para Archivo[aux-num_elementos]\n");
-			exit(EXIT_FAILURE);
-		}
+        // Excluir . y ..
+        if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+            continue;
+        }
 
-	
-	
-	
-	//si se pueden cambiar los permisos
-		printf("<nombre_archivo> : <permisos_antiguos> <permisos_nuevos>\n");
-	
-	//en el caso contrario
-		printf("<nombre_archivo> : <errno> <permisos_antiguos>\n");
-	
-	
-		num_elementos--;
-		
-	}//final del programa
-	
-	return EXIT_SUCCESS;
+        path = malloc(tam_direc + strlen(name) + 1);
+        strcpy(path, direc);
+        strcat(path + tam_direc, name);
+
+        struct stat atributos;
+        if (stat(path, &atributos) < 0) {
+            perror("\nERROR: al acceder a los atributos del archivo\n");
+            printf("Archivo: %s\n", path);
+            exit(EXIT_FAILURE);
+        }
+
+        const mode_t per_originales = atributos.st_mode;
+        // Utilizar una máscara para obtener solo los bits de permisos
+        const mode_t permisos_solo = per_originales & 0777;
+
+        if (chmod(path, permisos) < 0) {
+            printf("%s: ERROR %o\n", path, per_originales);
+        } else {
+            printf("%s: %o %o\n", path, permisos_solo, permisos);
+        }
+
+        free(path);
+    }
+
+    closedir(Directorio);
+
+    return EXIT_SUCCESS;
 }
 
