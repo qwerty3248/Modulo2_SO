@@ -60,14 +60,17 @@ int main(int argc, char *argv[]) {
             // ahora vamos a imprimir los mensajes que nos envíen en
             // cada uno de los cauces
             // Leer y procesar la salida del primer esclavo
-            char buffer[80];
-            while (read(fd1[0], buffer, sizeof(buffer)) > 0) {
+            char buffer[200];
+            ssize_t bytes_read;
+            while ((bytes_read = read(fd1[0], buffer, sizeof(buffer))) > 0) {
+                buffer[bytes_read] = '\0';//almacena la cantidad de bytes leidos la variable  bytes_read y le ponemos al final del vector un \0 para evitar basura posible despues en la salida
                 printf("Primos del primer esclavo: %s", buffer);
             }
-
+	    char buffer2[200];
             // Leer y procesar la salida del segundo esclavo
-            while (read(fd2[0], buffer, sizeof(buffer)) > 0) {
-                printf("\nPrimos del segundo esclavo: %s", buffer);
+            while ((bytes_read =read(fd2[0], buffer2, sizeof(buffer2))) > 0) {
+                buffer2[bytes_read] = '\0';//lo mismo que en el anterior 
+                printf("\nPrimos del segundo esclavo: %s", buffer2);
             }
         }
     }
