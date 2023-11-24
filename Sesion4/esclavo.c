@@ -1,5 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include<sys/types.h>
+#include<fcntl.h>
+#include<unistd.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<errno.h>
+#include<string.h>
 #include <math.h>
 #include <stdbool.h>
 
@@ -9,7 +14,6 @@ bool esPrimo(int n) {
             return false;
         }
     }
-
     return true;
 }
 
@@ -19,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = primer_intervalo; i <= segundo_intervalo; i++) {
         if (esPrimo(i)) {
-            printf("%d\n", i);
+            printf("%d ", i);
         }
     }
 
