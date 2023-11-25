@@ -1,34 +1,60 @@
+/*
+Ejercicio 7.
+Escribe un programa que acepte como argumentos el nombre de un
+programa, sus argumentos si los tiene,
+y opcionalmente la cadena "bg".
+Nuestro programa deberá ejecutar el programa pasado como
+primer argumento en foreground
+si no se especifica la cadena "bg" y en background en caso
+contrario.
+Si el programa tiene argumentos hay que ejecutarlo con éstos.
+*/
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
+    // Verifica el número de parámetros
     if (argc < 2) {
-        printf("ERROR: Uso incorrecto del programa. Prueba con [programa] [programa_a_ejecutar] [argumento1]...[argumento_n] [fg|bg]\n");
+        printf("\nNúmero de parámetros incorrecto\n");
         exit(EXIT_FAILURE);
     }
 
-    char* ejecutable = argv[1];
-    char* parametros[argc-3];
+    int background = 0;
+    char *nombre_programa = argv[1];
+    char **argumentos = argv + 1;  // Inicia desde el segundo argumento
 
-    for (int i = 2, contador = 0; i <= argc - 2; i++, contador++) {
-        parametros[contador] = argv[i];
+    // Comprueba si el último parámetro recibido es "bg"
+    if (strcmp(argv[argc - 1], "bg") == 0) {
+        background = 1;
+        argv[argc - 1] = NULL;  // Elimina "bg" de la lista de argumentos
     }
-    
-    parametros[argc-3]= NULL;
 
-    if (strcmp(argv[argc-1], "bg") == 0) {
-        if (execle("/usr/bin/bg",ejecutable,parametros) < 0) {
-            perror("ERROR en el execlp");
+    // Ejecución
+    pid_t pid;
+
+    if (background) {
+        printf("Ejecutando %s en background\n", nombre_programa);
+        if ((pid = fork()) < 0) {
+            perror("Error en fork");
             exit(EXIT_FAILURE);
         }
+
+        if (pid == 0) {
+            // Si es el hijo, ejecuta
+            if (execvp(nombre_programa, argumentos) < 0) {
+                perror("Error en execvp");
+                exit(EXIT_FAILURE);
+            }
+        }
     } else {
-        if (execv(ejecutable, parametros) < 0) {
-            perror("ERROR en el execv");
+        printf("Ejecutando %s en foreground\n", nombre_programa);
+        if (execvp(nombre_programa, argumentos) < 0) {
+            perror("Error en execvp");
             exit(EXIT_FAILURE);
         }
     }

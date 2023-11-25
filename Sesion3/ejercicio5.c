@@ -1,33 +1,60 @@
+/// actividad 5 /////////////////////////////////////////////////////
+
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <sys/wait.h>
 
-int main(void) {
-    int num_hijos = 5;
+#define ASSERT(expr, ...)if(!(expr))\
+                        { fprintf(stderr, __VA_ARGS__); exit(-1); }
+#define NUM_PROC 6 
 
-    for (int i = 0; i <= num_hijos; i++) {
-        pid_t pid;
-        if ((pid = fork()) < 0) {
-            perror("Error creando a un hijo\n");
-            exit(EXIT_FAILURE);
+int main(int argc, char *argv[])
+{
+    pid_t pid_hijo;
+    pid_t pid_padre = getpid();
+
+    /* INVOCA A LOS HIJOS */
+    for(int i=0; i<NUM_PROC; i++) {
+        // crea al hijo
+        pid_hijo = fork();
+        ASSERT(pid_hijo >= 0,
+               "[-] error: crear hijo %d: %s\n",i,strerror(errno));
+
+        // si es el hijo, sale del bucle 
+        if (!pid_hijo) break;
+    }
+
+    // espera a que termine cada hijo
+    if (getpid() == pid_padre) {
+        siginfo_t info_hijo;    // guarda el PID del hijo
+
+        /* ESPERA A LOS HIJOS IMPARES */
+        for(int i=1; i<NUM_PROC; i+=2) {
+            waitid(P_PID, getpid() + i, &info_hijo, WEXITED);
+            printf("[+] ha terminado el hijo %d\n",
+                   info_hijo.si_pid - getpid());
         }
 
-        if (pid == 0) {
-            printf("Soy el hijo %d\n", getpid());
-            exit(EXIT_SUCCESS); // Cada hijo debe salir después de imprimir su mensaje
+        /* ESPERA A LOS HIJOS PARES */
+        for(int i=2; i<NUM_PROC; i+=2) {
+            waitid(P_PID, getpid() + i, &info_hijo, WEXITED);
+            printf("[+] ha terminado el hijo %d\n",
+                   info_hijo.si_pid-getpid());
         }
     }
 
-    while (num_hijos > 0) {
-        printf("Soy el padre y me quedan %d hijos\n", num_hijos);
-        pid_t child_pid = wait(NULL); // Esperar a que un hijo termine cualquiera 
-        //si quisieramos un hijo en particular tendriamos que ponerle su status
-        printf("Acaba de finalizar mi hijo con PID %d\n", child_pid);
-        num_hijos--;
+    // si es el hijo, imprime su índice y su PID
+    else {
+        printf("[+] hijo %d iniciado con PID %d\n",
+               getpid() - getppid(), getpid());
+
+        // retardo
+        sleep((getpid() - getppid()));
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
