@@ -30,15 +30,15 @@ int main(int argc, char *argv[]) {
 
     if (PID == 0) { // el hijo tiene que eliminar comunicaciones
         close(fd1[0]); // cerramos lectura
-        close(fd2[0]); // cerramos lectura del segundo cauce
-        close(fd2[1]); // cerramos escritura del segundo cauce
+        //close(fd2[0]); // cerramos lectura del segundo cauce
+        //close(fd2[1]); // cerramos escritura del segundo cauce
         dup2(fd1[1], STDOUT_FILENO); 
         execlp("./esclavo", "./esclavo", argv[1], aux_str1, NULL);
         
         
     } else { // el padre tiene que eliminar comunicaciones
         close(fd1[1]); // cerramos escritura
-        wait(NULL);
+        
 
         // ahora vamos a crear al otro hijo
         pipe(fd2); // segundo canal de comunicación
@@ -62,19 +62,22 @@ int main(int argc, char *argv[]) {
             // Leer y procesar la salida del primer esclavo
             char buffer[200];
             ssize_t bytes_read;
-            while ((bytes_read = read(fd1[0], buffer, sizeof(buffer))) > 0) {
+            while ((bytes_read = read(fd1[0], buffer, sizeof(buffer))) > 0){
                 buffer[bytes_read] = '\0';//almacena la cantidad de bytes leidos la variable  bytes_read y le ponemos al final del vector un \0 para evitar basura posible despues en la salida
                 printf("Primos del primer esclavo: %s", buffer);
             }
+            
 	    char buffer2[200];
             // Leer y procesar la salida del segundo esclavo
             while ((bytes_read =read(fd2[0], buffer2, sizeof(buffer2))) > 0) {
                 buffer2[bytes_read] = '\0';//lo mismo que en el anterior 
                 printf("\nPrimos del segundo esclavo: %s", buffer2);
             }
+            
         }
     }
-
+    wait(NULL);
+    wait(NULL);
     printf("\nAqui acaba la secuencia de numeros primos en los intervalos [%d] [%d]\n", primer_intervalo, segundo_intervalo);
     return 0;
 }
